@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask import jsonify
 import requests
 import functions
@@ -12,9 +12,17 @@ def hello():
 
 @app.route('/associatedPatients')
 def returnAssociatedPatients():
-    ##Just testing to see if i can make these kinds of API requests anyway
+    #get the practitioner id
+    prac_id = request.args.get('pracid')
+    print(prac_id)
 
-    patientIDArray = functions.returnPatientIDArray(str(5059914))
+    if prac_id==None:
+        ##just assign a defualt id so the system doesnt break
+        prac_id = 3
+
+    #Pass the practitioner to the function that returns the array of patient IDs
+    patientIDArray = functions.returnPatientIDArray(str(prac_id))
+
     ###NOW I CAN SEARCH THROUGH ALL THE EnCOUNTERS
     array_dict = {"array":patientIDArray}
 

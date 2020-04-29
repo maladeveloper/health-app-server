@@ -3,7 +3,8 @@ def returnPatientIDArray(practitioner_id):
     root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
     search1_url = root_url +"Encounter?practitioner="+str(practitioner_id)
 
-    patientIDArray =[]
+    #The patient set that stores all the patients
+    patientIDArray =set()
     #Now search all the encounters and append patient IDs to patient ID array
     next_page = True
     next_url = search1_url
@@ -37,6 +38,6 @@ def returnPatientIDArray(practitioner_id):
             if practitioner_id == prac_returned_id:
                 #Get the patient ID from such an entry
                 patientID = entry[i]['resource']['subject']['reference'].split('/')[1]
-                patientIDArray.append(patientID)
+                patientIDArray.add(patientID)
 
-    return patientIDArray
+    return list(patientIDArray)
