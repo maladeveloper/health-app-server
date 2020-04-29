@@ -16,7 +16,10 @@ def returnAssociatedPatients():
 
     patientIDArray = functions.returnPatientIDArray(str(5059914))
     ###NOW I CAN SEARCH THROUGH ALL THE EnCOUNTERS
-    return jsonify(patientIDArray)
+    array_dict = {"array":patientIDArray}
+
+    return jsonify(array_dict)
+
 
 if __name__ == '__main__':
     app.run()
