@@ -14,7 +14,7 @@ def returnPatientCholesterolLevel(patientID):
     data = requests.get(url=search3_url)
     ##not all patients might have cholesterol data so we must error check
     print(data.status_code)
-    if data.status_code!="200":
+    if data.status_code!=200:
         return returnNUllCholesterolData()
 
     data2 = data.json()
