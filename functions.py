@@ -34,10 +34,10 @@ def returnPatientIDArray(practitioner_id):
             prac_returned_id =str(entry[i]['resource']['participant'][0]['individual']['reference'].split('/')[1])
             print("PAGE: "+str(count_page))
             print("ENCOUNT:"+str(count_encounters))
-            #Find only the encounters in which this specific practitioner was involved.
-            if practitioner_id == prac_returned_id:
-                #Get the patient ID from such an entry
-                patientID = entry[i]['resource']['subject']['reference'].split('/')[1]
-                patientIDArray.add(patientID)
+            #Get the patient ID from such an entry
+            patientID = entry[i]['resource']['subject']['reference'].split('/')[1]
+            print(patientID)
+            patientIDArray.add(patientID)
 
     return list(patientIDArray)
+
