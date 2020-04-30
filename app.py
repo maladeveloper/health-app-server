@@ -3,7 +3,7 @@ from flask import jsonify
 import requests
 import functions
 import patientDetailFunctions
-
+import verificationFunctions
 app = Flask(__name__)
 
 
@@ -15,14 +15,13 @@ def hello():
 def getAssociatedPatients():
     #get the practitioner id from the url argument pracid
     prac_id = request.args.get('pracid')
-    print(prac_id)
-
+    prac_lname = request.args.get('praclname')
     if prac_id==None:
         ##just assign a defualt id so the system doesnt break
         prac_id = 3
 
     #Pass the practitioner to the function that returns the array of patient IDs
-    patientIDArray = functions.returnPatientIDArray(str(prac_id))
+    patientIDArray = functions.returnPatientIDArray(str(prac_id),str(prac_lname))
 
     ###NOW I CAN SEARCH THROUGH ALL THE EnCOUNTERS
     array_dict = {"array":patientIDArray}
@@ -43,10 +42,15 @@ def getPatientDetails():
     #Now get the required information
     if specified_data=="cholesterol":
         return jsonify(patientDetailFunctions.returnPatientCholesterolLevel(str(patientID)))
-
-
-
     return
+
+@app.route('/getPractitioner')
+def verifyAndReturnPractitioner():
+    prac_id = request.args.get('pracid')
+    #DEfault the id to something ##REMOVE LATER
+    if prac_id==None:
+        prac_id = "93520"
+    return jsonify(verificationFunctions.getAndVerifyPractitioner(str(prac_id)))
 
 
 if __name__ == '__main__':

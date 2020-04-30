@@ -1,9 +1,7 @@
-obj = {'fullUrl': 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/Encounter/4944200', 'resource': {'resourceType': 'Encounter', 'id': '4944200', 'meta': {'versionId': '1', 'lastUpdated': '2020-03-18T21:06:56.804+11:00', 'source': '#iEPWH4ImCZ8I942z'}, 'status': 'finished', 'class': {'system': 'http://terminology.hl7.org/CodeSystem/v3-ActCode', 'code': 'AMB'}, 'type': [{'coding': [{'system': 'http://snomed.info/sct', 'code': '162673000', 'display': 'General examination of patient (procedure)'}], 'text': 'General examination of patient (procedure)'}], 'subject': {'reference': 'Patient/4944197', 'display': 'Mr. Andreas188 Will178'}, 'participant': [{'individual': {'reference': 'Practitioner/4944199', 'display': 'Dr. Alysha630 Greenholt190'}}], 'period': {'start': '2010-09-09T23:38:41+10:00', 'end': '2010-09-09T23:53:41+10:00'}, 'serviceProvider': {'reference': 'Organization/4944198', 'display': 'PCP346693'}}, 'search': {'mode': 'match'}}
+import requests
+import pprint
 
-for k, v in obj.items():
-    print(k, v)
-
-obj2 = {'resourceType': 'Encounter', 'id': '4944200', 'meta': {'versionId': '1', 'lastUpdated': '2020-03-18T21:06:56.804+11:00', 'source': '#iEPWH4ImCZ8I942z'}, 'status': 'finished', 'class': {'system': 'http://terminology.hl7.org/CodeSystem/v3-ActCode', 'code': 'AMB'}, 'type': [{'coding': [{'system': 'http://snomed.info/sct', 'code': '162673000', 'display': 'General examination of patient (procedure)'}], 'text': 'General examination of patient (procedure)'}], 'subject': {'reference': 'Patient/4944197', 'display': 'Mr. Andreas188 Will178'}, 'participant': [{'individual': {'reference': 'Practitioner/4944199', 'display': 'Dr. Alysha630 Greenholt190'}}], 'period': {'start': '2010-09-09T23:38:41+10:00', 'end': '2010-09-09T23:53:41+10:00'}, 'serviceProvider': {'reference': 'Organization/4944198', 'display': 'PCP346693'}}
-print("\n")
-for k, v in obj2.items():
-    print(k, v)
+root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
+search1_url = root_url + "/Practitioner?identifier=93520"
+data = requests.get(url=search1_url).json()
+pprint.pprint(data)
