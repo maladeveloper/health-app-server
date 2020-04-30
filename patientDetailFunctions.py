@@ -18,8 +18,13 @@ def returnPatientCholesterolLevel(patientID):
         return returnNUllCholesterolData()
 
     data2 = data.json()
+    print(data2)
 
-    entry = data2['entry']
+    ## Some returned data might not be in the form of an observation but rather a bundle containing nothing
+    try:
+        entry = data2['entry']
+    except KeyError:
+        return returnNUllCholesterolData()
 
     #Since we sorted by newest date, we get the first enty from the entiries array
 
