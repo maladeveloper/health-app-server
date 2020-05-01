@@ -7,6 +7,7 @@ def returnPatientCholesterolLevel(patientID):
         cholesterol_details_dict["cholesterol_data"] = "NONE"
         cholesterol_details_dict["cholesterol_units"]= "NONE"
         cholesterol_details_dict["time_issued"]= "NONE"
+        cholesterol_details_dict['ID'] = patientID
         return cholesterol_details_dict
 
     root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
@@ -33,6 +34,7 @@ def returnPatientCholesterolLevel(patientID):
         cholesterol_details_dict["cholesterol_data"] = str(entry[0]['resource']['valueQuantity']['value'])
         cholesterol_details_dict["cholesterol_units"] = str(entry[0]['resource']['valueQuantity']['unit'])
         cholesterol_details_dict["time_issued"] = str(entry[0]['resource']['issued'])
+        cholesterol_details_dict['ID'] = patientID
     else:
         return returnNUllCholesterolData()
 
