@@ -34,7 +34,7 @@ def getAssociatedPatients():
     queue = Queue()
 
     # Create 16 worker threads
-    THREADS=16
+    THREADS=20
     for x in range(THREADS):
         worker = GetPatientDataWorker(queue,patientIDArray)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
@@ -65,7 +65,7 @@ def getPatientDetails():
     queue = Queue()
 
     # Create 4 worker threads
-    THREADS = 16
+    THREADS = 20
     for x in range(THREADS):
         worker = GetPatientCholesterolDataWorker(queue, patientsCholesterolData)
         # Setting daemon to True will let the main thread exit even though the workers are blocking
