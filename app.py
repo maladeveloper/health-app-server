@@ -1,3 +1,5 @@
+from queue import Queue
+from functions import GetPatientDataWorker
 from flask import Flask, request
 from flask import jsonify
 import requests
@@ -20,11 +22,31 @@ def getAssociatedPatients():
         ##just assign a defualt id so the system doesnt break
         prac_id = 3
 
-    #Pass the practitioner to the function that returns the array of patient IDs
-    patientIDArray = functions.returnPatientIDArray(str(prac_id),str(prac_lname))
+    #Find all the practitioner IDs
+    practitionerIDs = functions.getAllPractitionerObjIDs(str(prac_id),str(prac_lname))
 
-    ###NOW I CAN SEARCH THROUGH ALL THE EnCOUNTERS
-    array_dict = {"array":patientIDArray}
+    ##Set to store all the patient IDS ALL threads share this
+    patientIDArray=set()
+
+    # Create a queue to communicate with the worker threads
+    queue = Queue()
+
+    # Create 4 worker threads
+    THREADS=4
+    for x in range(THREADS):
+        worker = GetPatientDataWorker(queue,patientIDArray)
+        # Setting daemon to True will let the main thread exit even though the workers are blocking
+        worker.daemon = True
+        worker.start()
+
+    for practitionerID in practitionerIDs:
+        queue.put(practitionerID)
+
+    # Causes the main thread to wait for the queue to finish processing all the tasks
+    queue.join()
+
+    #Put the patients ID Array into a dictionary to zip
+    array_dict = {"array":list(patientIDArray)}
 
     return jsonify(array_dict)
 
