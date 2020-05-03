@@ -7,6 +7,7 @@ def getAndVerifyPractitioner(prac_identifier):
     practitionerObj = {}
 
     def returnNullPractitioner():
+        practitionerObj = {}
         practitionerObj["fname"] = "NONE"
         practitionerObj['lname'] = "NONE"
         practitionerObj["prefix"] = "NONE"
@@ -22,7 +23,7 @@ def getAndVerifyPractitioner(prac_identifier):
         return returnNullPractitioner()
 
     """
-     Since there can be more than on practiitoner with the same Identifier (BUG ALDEIDA MENTIONED)
+     Since there can be more than one practiitoner with the same Identifier (BUG ALDEIDA MENTIONED)
      we choose the details of the first entry and choose that as the practitioner for this identifier
      """
     #Otherwise get the practitioner details of the first entry

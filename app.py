@@ -1,9 +1,11 @@
 from queue import Queue
 from functions import GetPatientDataWorker
+from patientDetailFunctions import GetPatientCholesterolDataWorker
 from flask import Flask, request
 from flask import jsonify
 import requests
 import functions
+from ast import literal_eval
 import patientDetailFunctions
 import verificationFunctions
 app = Flask(__name__)
@@ -50,21 +52,38 @@ def getAssociatedPatients():
 
     return jsonify(array_dict)
 
-@app.route('/patientData')
+@app.route('/patientDataCholesterol')
 def getPatientDetails():
-    specified_data= request.args.get('specifieddata')
-    patientID = request.args.get('patientid')
-    #Default to cholesterol if specified data isnt specified
-    if specified_data==None:
-        specified_data="cholesterol"
-    #Default to patient 1 if patient ID isnt specified
-    if patientID ==None:
-        patientID = "1"
+    patientIDArray = literal_eval(request.args.get("patientidarray"))
 
-    #Now get the required information
-    if specified_data=="cholesterol":
-        return jsonify(patientDetailFunctions.returnPatientCholesterolLevel(str(patientID)))
-    return
+
+
+    ##Set to store all the patient Cholesterol data ALL threads share this
+    patientsCholesterolData=[]
+
+    # Create a queue to communicate with the worker threads
+    queue = Queue()
+
+    # Create 4 worker threads
+    THREADS = 8
+    for x in range(THREADS):
+        worker = GetPatientCholesterolDataWorker(queue, patientsCholesterolData)
+        # Setting daemon to True will let the main thread exit even though the workers are blocking
+        worker.daemon = True
+        worker.start()
+
+    for patID in patientIDArray:
+        print(patID)
+        queue.put(str(patID))
+
+    # Causes the main thread to wait for the queue to finish processing all the tasks
+    queue.join()
+
+
+    array_dict = {"array":list(patientsCholesterolData)}
+
+    return jsonify(array_dict)
+
 
 @app.route('/getPractitioner')
 def verifyAndReturnPractitioner():
