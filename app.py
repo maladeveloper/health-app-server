@@ -48,9 +48,9 @@ def getAssociatedPatients():
     queue.join()
 
     #Put the patients ID Array into a dictionary to zip
-    array_dict = {"array":list(patientIDArray)}
 
-    return jsonify(array_dict)
+
+    return jsonify(list(patientIDArray))
 
 @app.route('/patientDataCholesterol')
 def getPatientDetails():
