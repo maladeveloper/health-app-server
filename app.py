@@ -52,35 +52,36 @@ def getAssociatedPatients():
 
     return jsonify(array_dict)
 
-@app.route('/patientDataCholesterol')
+@app.route('/patientData')
 def getPatientDetails():
     patientIDArray = literal_eval(request.args.get("patientidarray"))
+    dataSpecifier = request.args.get("data")
+
+    array_dict={}
+    if dataSpecifier=="cholesterol":
+        ##Set to store all the patient Cholesterol data ALL threads share this
+        patientsCholesterolData=[]
+
+        # Create a queue to communicate with the worker threads
+        queue = Queue()
+
+        # Create 4 worker threads
+        THREADS = 32
+        for x in range(THREADS):
+            worker = GetPatientCholesterolDataWorker(queue, patientsCholesterolData)
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            worker.daemon = True
+            worker.start()
+
+        for patID in patientIDArray:
+            print(patID)
+            queue.put(str(patID))
+
+        # Causes the main thread to wait for the queue to finish processing all the tasks
+        queue.join()
 
 
-
-    ##Set to store all the patient Cholesterol data ALL threads share this
-    patientsCholesterolData=[]
-
-    # Create a queue to communicate with the worker threads
-    queue = Queue()
-
-    # Create 4 worker threads
-    THREADS = 32
-    for x in range(THREADS):
-        worker = GetPatientCholesterolDataWorker(queue, patientsCholesterolData)
-        # Setting daemon to True will let the main thread exit even though the workers are blocking
-        worker.daemon = True
-        worker.start()
-
-    for patID in patientIDArray:
-        print(patID)
-        queue.put(str(patID))
-
-    # Causes the main thread to wait for the queue to finish processing all the tasks
-    queue.join()
-
-
-    array_dict = {"array":list(patientsCholesterolData)}
+        array_dict = {"array":list(patientsCholesterolData)}
 
     return jsonify(array_dict)
 
