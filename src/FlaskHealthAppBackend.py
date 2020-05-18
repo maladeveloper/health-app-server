@@ -1,22 +1,20 @@
 from flask import jsonify
-from flask_classful import FlaskView, route
+from flask_classful import route
 from ast import literal_eval
-import verifyAndReturnPractitioner_Functions
 from queue import Queue
-import getAssociatedPatients_Functions
-import getPatientDetails_Functions
-from flask import Flask, request
+from src import getPatientDetails_Functions, getAssociatedPatients_Functions, verifyAndReturnPractitioner_Functions
+from flask import request
+from src.FlaskHealthAppBackendInterface import FlaskHealthAppBackendInterface
 
-class FlaskHealthAppBackend(FlaskView):
+
+class FlaskHealthAppBackend(FlaskHealthAppBackendInterface):
 
     @route('/associatedPatients')
     def getAssociatedPatients(self):
         #get the practitioner id from the url argument pracid
         prac_id = request.args.get('pracid')
         prac_lname = request.args.get('praclname')
-        if prac_id==None:
-            ##just assign a defualt id so the system doesnt break
-            prac_id = 3
+
 
         #Find all the practitioner IDs
         practitionerIDs = getAssociatedPatients_Functions.getAllPractitionerObjIDs(str(prac_id), str(prac_lname))
@@ -27,7 +25,7 @@ class FlaskHealthAppBackend(FlaskView):
         # Create a queue to communicate with the worker threads
         queue = Queue()
 
-        # Create 16 worker threads
+        # Create 32 worker threads
         THREADS=32
         for x in range(THREADS):
             worker = getAssociatedPatients_Functions.GetPatientDataWorker(queue, patientIDArray)
@@ -59,7 +57,7 @@ class FlaskHealthAppBackend(FlaskView):
             # Create a queue to communicate with the worker threads
             queue = Queue()
 
-            # Create 4 worker threads
+            # Create 32 worker threads
             THREADS = 32
             for x in range(THREADS):
                 worker = getPatientDetails_Functions.GetPatientCholesterolDataWorker(queue, patientsCholesterolData)
@@ -83,7 +81,5 @@ class FlaskHealthAppBackend(FlaskView):
     @route('/getPractitioner')
     def verifyAndReturnPractitioner(self):
         prac_id = request.args.get('pracid')
-        #DEfault the id to something ##REMOVE LATER
-        if prac_id==None:
-            prac_id = "93520"
+
         return jsonify(verifyAndReturnPractitioner_Functions.getAndVerifyPractitioner(str(prac_id)))
