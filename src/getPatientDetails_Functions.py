@@ -1,3 +1,4 @@
+from queue import Queue
 from threading import Thread
 
 import requests
@@ -11,10 +12,8 @@ def returnNUllCholesterolData(patientID):
     cholesterol_details_dict['ID'] = patientID
     return cholesterol_details_dict
 
-def returnPatientCholesterolLevel(patientID,patientsCholesterolData):
+def returnPatientCholesterolLevel(patientID,patientsData):
     cholesterol_details_dict = {}
-
-
     root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
     search3_url = root_url + "Observation?patient="+patientID+"&code=2093-3&_sort=-date"
     data = requests.get(url=search3_url)
@@ -42,22 +41,115 @@ def returnPatientCholesterolLevel(patientID,patientsCholesterolData):
     else:
         return
 
-    patientsCholesterolData.append( cholesterol_details_dict)
+    patientsData.append( cholesterol_details_dict)
     return
 
-class GetPatientCholesterolDataWorker(Thread):
 
-    def __init__(self, queue,patientsCholesterolData):
+def returnPatientBloodPressureLevel(patientID,patientsData):
+    bloodPressure_dict = {}
+    root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
+    search3_url = root_url + "Observation?patient=" + patientID + "&code=55284-4&_sort=-date"
+    data = requests.get(url=search3_url)
+    print(search3_url)
+    ##not all patients might have cholesterol data so we must error check
+    if data.status_code != 200:
+        return
+
+    data2 = data.json()
+
+    ## Some returned data might not be in the form of an observation but rather a bundle containing nothing
+    try:
+        entry = data2['entry'][0]
+    except KeyError:
+        return
+
+
+    # Need to define a new code for each component of the blood pressure
+    components = entry['resource']['component']
+    for component in components:
+        name = component["code"]['coding'][0]['display']
+        value = component['valueQuantity']['value']
+        bloodPressure_dict[name] = value
+
+    bloodPressure_dict["time_issued"] = str(entry['resource']['issued'])
+    bloodPressure_dict['ID'] = patientID
+
+    #Add the final values into all data array.
+    patientsData.append(bloodPressure_dict)
+    return
+
+
+
+class GetPatientDataWorker(Thread):
+
+    def __init__(self, queue,patientsData, dataFunction):
         Thread.__init__(self)
+        self.dataFunction = dataFunction
         self.queue = queue
-        self.patientsCholesterolData =patientsCholesterolData
+        self.patientsData =patientsData
 
     def run(self, ):
         while True:
             # Get the work from the queue and expand the tuple
             patientID = self.queue.get()
             try:
-                returnPatientCholesterolLevel(patientID,self.patientsCholesterolData)
+                self.dataFunction(patientID, self.patientsData)
             finally:
 
                 self.queue.task_done()
+
+
+
+def findPatientData(dataSpecifier,patientIDArray, ALL_DATA):
+
+
+    # Create a queue to communicate with the worker threads
+    queue = Queue()
+
+    # Create 32 worker threads
+    THREADS = 32
+
+
+    if dataSpecifier == "cholesterol":
+
+        for x in range(THREADS):
+            worker = GetPatientDataWorker(queue, ALL_DATA,returnPatientCholesterolLevel)
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            worker.daemon = True
+            worker.start()
+
+        for patID in patientIDArray:
+            print(patID)
+            queue.put(str(patID))
+        # Causes the main thread to wait for the queue to finish processing all the tasks
+        queue.join()
+
+    elif dataSpecifier =="bloodPressure":
+        for x in range(THREADS):
+            worker = GetPatientDataWorker(queue, ALL_DATA, returnPatientBloodPressureLevel)
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            worker.daemon = True
+            worker.start()
+
+        for patID in patientIDArray:
+            print(patID)
+            queue.put(str(patID))
+            # Causes the main thread to wait for the queue to finish processing all the tasks
+        queue.join()
+
+
+
+def collateAllData(All_DATA):
+
+    #The new array that contains all the patient data
+    NewAllData = dict()
+    for data in All_DATA:
+        try:
+            NewAllData[data["ID"]].update(data)
+
+        except KeyError:
+            NewAllData[data["ID"]] = dict()
+            # Now update the dictionary to contain the specified data
+            NewAllData[data["ID"]].update(data)
+
+    return NewAllData.values()

@@ -1,3 +1,5 @@
+import ast
+
 from flask import jsonify
 from flask_classful import route
 from ast import literal_eval
@@ -47,33 +49,19 @@ class FlaskHealthAppBackend(FlaskHealthAppBackendInterface):
     @route('/patientData')
     def getPatientDetails(self):
         patientIDArray = literal_eval(request.args.get("patientidarray"))
-        dataSpecifier = request.args.get("data")
+        print(patientIDArray)
+        dataSpecifierArray = ast.literal_eval( request.args.get("dataArray"))
+        print(dataSpecifierArray)
 
-        array_dict={}
-        if dataSpecifier=="cholesterol":
-            ##Set to store all the patient Cholesterol data ALL threads share this
-            patientsCholesterolData=[]
+        ALL_DATA = []
 
-            # Create a queue to communicate with the worker threads
-            queue = Queue()
+        #Go through all the conditions that are listed in the array.
+        for dataSpecifier in dataSpecifierArray:
+            getPatientDetails_Functions.findPatientData(dataSpecifier, patientIDArray, ALL_DATA)
 
-            # Create 32 worker threads
-            THREADS = 32
-            for x in range(THREADS):
-                worker = getPatientDetails_Functions.GetPatientCholesterolDataWorker(queue, patientsCholesterolData)
-                # Setting daemon to True will let the main thread exit even though the workers are blocking
-                worker.daemon = True
-                worker.start()
+        ALL_DATA = getPatientDetails_Functions.collateAllData(ALL_DATA)
 
-            for patID in patientIDArray:
-                print(patID)
-                queue.put(str(patID))
-
-            # Causes the main thread to wait for the queue to finish processing all the tasks
-            queue.join()
-
-
-            array_dict = {"array":list(patientsCholesterolData)}
+        array_dict = {"array":list(ALL_DATA)}
 
         return jsonify(array_dict)
 
