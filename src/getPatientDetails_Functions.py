@@ -36,7 +36,7 @@ def returnPatientCholesterolLevel(patientID,patientsData):
     if len(entry)>=1:
         cholesterol_details_dict["cholesterol_data"] = str(entry[0]['resource']['valueQuantity']['value'])
         cholesterol_details_dict["cholesterol_units"] = str(entry[0]['resource']['valueQuantity']['unit'])
-        cholesterol_details_dict["time_issued"] = str(entry[0]['resource']['issued'])
+        cholesterol_details_dict["cholesterol_timeIssued"] = str(entry[0]['resource']['issued'])
         cholesterol_details_dict['ID'] = patientID
     else:
         return
@@ -50,7 +50,6 @@ def returnPatientBloodPressureLevel(patientID,patientsData):
     root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
     search3_url = root_url + "Observation?patient=" + patientID + "&code=55284-4&_sort=-date"
     data = requests.get(url=search3_url)
-    print(search3_url)
     ##not all patients might have cholesterol data so we must error check
     if data.status_code != 200:
         return
@@ -67,12 +66,26 @@ def returnPatientBloodPressureLevel(patientID,patientsData):
     # Need to define a new code for each component of the blood pressure
     components = entry['resource']['component']
     for component in components:
+        #Get the value from the component
         name = component["code"]['coding'][0]['display']
+        name = name.replace(" ", "")
         value = component['valueQuantity']['value']
-        bloodPressure_dict[name] = value
 
-    bloodPressure_dict["time_issued"] = str(entry['resource']['issued'])
+        #Get the units of the component
+        unitName = name+"_units"
+        units = component['valueQuantity']['unit']
+
+        #Get the issued time of the measurement
+        issuedTimeName = name + "_timeIssued"
+        issuedTime = entry['resource']['issued']
+
+        #Add the acquired information to the dictionary
+        bloodPressure_dict[name] = value
+        bloodPressure_dict[unitName] = units
+        bloodPressure_dict[issuedTimeName] = issuedTime
+
     bloodPressure_dict['ID'] = patientID
+
 
     #Add the final values into all data array.
     patientsData.append(bloodPressure_dict)
