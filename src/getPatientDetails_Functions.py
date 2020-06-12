@@ -1,24 +1,18 @@
 from queue import Queue
 from threading import Thread
-
+import json
 import requests
 
 
-def returnNUllCholesterolData(patientID):
-    cholesterol_details_dict = {}
-    cholesterol_details_dict["cholesterol_data"] = "NONE"
-    cholesterol_details_dict["cholesterol_units"] = "NONE"
-    cholesterol_details_dict["time_issued"] = "NONE"
-    cholesterol_details_dict['ID'] = patientID
-    return cholesterol_details_dict
 
-def returnPatientCholesterolLevel(patientID,patientsData):
-    cholesterol_details_dict = {}
+
+def returnPatientLevel(patientID,patientsData,dataResource):
+    observation_details_dict = {}
     root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
-    search3_url = root_url + "Observation?patient="+patientID+"&code=2093-3&_sort=-date"
+    search3_url = root_url + "Observation?patient="+patientID+"&code="+ dataResource['code'] +"&_sort=-date"
     data = requests.get(url=search3_url)
 
-    ##not all patients might have cholesterol data so we must error check
+    ##not all patients might have the data so we must error check
     if data.status_code!=200:
         return
 
@@ -34,21 +28,21 @@ def returnPatientCholesterolLevel(patientID,patientsData):
 
     #Make sure there is an entry
     if len(entry)>=1:
-        cholesterol_details_dict["cholesterol_data"] = str(entry[0]['resource']['valueQuantity']['value'])
-        cholesterol_details_dict["cholesterol_units"] = str(entry[0]['resource']['valueQuantity']['unit'])
-        cholesterol_details_dict["cholesterol_timeIssued"] = str(entry[0]['resource']['issued'])
-        cholesterol_details_dict['ID'] = patientID
+        observation_details_dict[dataResource['name']+"_data"] = str(entry[0]['resource']['valueQuantity']['value'])
+        observation_details_dict[dataResource['name']+"_units"] = str(entry[0]['resource']['valueQuantity']['unit'])
+        observation_details_dict[dataResource['name']+"_timeIssued"] = str(entry[0]['resource']['issued'])
+        observation_details_dict['ID'] = patientID
     else:
         return
 
-    patientsData.append( cholesterol_details_dict)
+    patientsData.append(observation_details_dict)
     return
 
 
-def returnPatientBloodPressureLevel(patientID,patientsData):
+def returnPatientBloodPressureLevel(patientID,patientsData, dataResource):
     bloodPressure_dict = {}
     root_url = 'https://fhir.monash.edu/hapi-fhir-jpaserver/fhir/'
-    search3_url = root_url + "Observation?patient=" + patientID + "&code=55284-4&_sort=-date"
+    search3_url = root_url + "Observation?patient=" + patientID + "&code="+dataResource['code']+"&_sort=-date"
     data = requests.get(url=search3_url)
     ##not all patients might have cholesterol data so we must error check
     if data.status_code != 200:
@@ -62,27 +56,24 @@ def returnPatientBloodPressureLevel(patientID,patientsData):
     except KeyError:
         return
 
+    # Here we split off between getting the systolic and diastolic data
+    systolicBloodPressureCode = "8480-6"
+    diastolicBloodPressureCode = "8462-4"
+    code = None
+    if dataResource['name'] == 'systolic_blood_pressure':
+        code = systolicBloodPressureCode
+    elif dataResource['name'] == 'diastolic_blood_pressure':
+        code = diastolicBloodPressureCode
 
     # Need to define a new code for each component of the blood pressure
     components = entry['resource']['component']
     for component in components:
-        #Get the value from the component
-        name = component["code"]['coding'][0]['display']
-        name = name.replace(" ", "")
-        value = component['valueQuantity']['value']
-
-        #Get the units of the component
-        unitName = name+"_units"
-        units = component['valueQuantity']['unit']
-
-        #Get the issued time of the measurement
-        issuedTimeName = name + "_timeIssued"
-        issuedTime = entry['resource']['issued']
-
-        #Add the acquired information to the dictionary
-        bloodPressure_dict[name] = value
-        bloodPressure_dict[unitName] = units
-        bloodPressure_dict[issuedTimeName] = issuedTime
+        #Check whether the diastolic of systolic data is needed
+        if component["code"]['coding'][0]['code'] == code:
+            #Add the acquired information to the dictionary
+            bloodPressure_dict[dataResource['name']+"_data"] = component['valueQuantity']['value']
+            bloodPressure_dict[dataResource['name']+"_units"] = component['valueQuantity']['unit']
+            bloodPressure_dict[dataResource['name']+"_timeIssued"] = entry['resource']['issued']
 
     bloodPressure_dict['ID'] = patientID
 
@@ -95,18 +86,19 @@ def returnPatientBloodPressureLevel(patientID,patientsData):
 
 class GetPatientDataWorker(Thread):
 
-    def __init__(self, queue,patientsData, dataFunction):
+    def __init__(self, queue,patientsData, dataFunction,dataResource):
         Thread.__init__(self)
         self.dataFunction = dataFunction
         self.queue = queue
         self.patientsData =patientsData
+        self.dataResource = dataResource
 
     def run(self, ):
         while True:
             # Get the work from the queue and expand the tuple
             patientID = self.queue.get()
             try:
-                self.dataFunction(patientID, self.patientsData)
+                self.dataFunction(patientID, self.patientsData,self.dataResource)
             finally:
 
                 self.queue.task_done()
@@ -123,10 +115,34 @@ def findPatientData(dataSpecifier,patientIDArray, ALL_DATA):
     THREADS = 32
 
 
-    if dataSpecifier == "cholesterol":
+    observationToCodeMap = {
+                              "cholesterol": "2093-3",
+                              "systolic_blood_pressure": "55284-4",
+                              "diastolic_blood_pressure": "55284-4"
+                           }
 
+    #Combine the data specifier string and the data code into a data resource dictionary
+    dataResource = {}
+    dataResource['name'] = dataSpecifier
+    dataResource['code'] = observationToCodeMap[dataSpecifier]
+
+    #There is a special case for the observation of blood pressure.
+    if dataResource['code'] =="55284-4":
         for x in range(THREADS):
-            worker = GetPatientDataWorker(queue, ALL_DATA,returnPatientCholesterolLevel)
+            worker = GetPatientDataWorker(queue, ALL_DATA, returnPatientBloodPressureLevel,dataResource)
+            # Setting daemon to True will let the main thread exit even though the workers are blocking
+            worker.daemon = True
+            worker.start()
+
+        for patID in patientIDArray:
+            print(patID)
+            queue.put(str(patID))
+            # Causes the main thread to wait for the queue to finish processing all the tasks
+        queue.join()
+
+    else:
+        for x in range(THREADS):
+            worker = GetPatientDataWorker(queue, ALL_DATA,returnPatientLevel,dataResource)
             # Setting daemon to True will let the main thread exit even though the workers are blocking
             worker.daemon = True
             worker.start()
@@ -137,18 +153,7 @@ def findPatientData(dataSpecifier,patientIDArray, ALL_DATA):
         # Causes the main thread to wait for the queue to finish processing all the tasks
         queue.join()
 
-    elif dataSpecifier =="bloodPressure":
-        for x in range(THREADS):
-            worker = GetPatientDataWorker(queue, ALL_DATA, returnPatientBloodPressureLevel)
-            # Setting daemon to True will let the main thread exit even though the workers are blocking
-            worker.daemon = True
-            worker.start()
 
-        for patID in patientIDArray:
-            print(patID)
-            queue.put(str(patID))
-            # Causes the main thread to wait for the queue to finish processing all the tasks
-        queue.join()
 
 
 
