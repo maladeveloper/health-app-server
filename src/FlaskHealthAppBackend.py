@@ -49,9 +49,8 @@ class FlaskHealthAppBackend(FlaskHealthAppBackendInterface):
     @route('/patientData')
     def getPatientDetails(self):
         patientIDArray = literal_eval(request.args.get("patientidarray"))
-        print(patientIDArray)
         dataSpecifierArray = ast.literal_eval( request.args.get("dataArray"))
-        print(dataSpecifierArray)
+
 
         ALL_DATA = []
 
