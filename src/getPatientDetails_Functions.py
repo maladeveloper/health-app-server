@@ -71,9 +71,9 @@ def returnPatientBloodPressureLevel(patientID,patientsData, dataResource):
         #Check whether the diastolic of systolic data is needed
         if component["code"]['coding'][0]['code'] == code:
             #Add the acquired information to the dictionary
-            bloodPressure_dict[dataResource['name']+"_data"] = component['valueQuantity']['value']
-            bloodPressure_dict[dataResource['name']+"_units"] = component['valueQuantity']['unit']
-            bloodPressure_dict[dataResource['name']+"_timeIssued"] = entry['resource']['issued']
+            bloodPressure_dict[dataResource['name']+"_data"] = str(component['valueQuantity']['value'])
+            bloodPressure_dict[dataResource['name']+"_units"] = str(component['valueQuantity']['unit'])
+            bloodPressure_dict[dataResource['name']+"_timeIssued"] = str(entry['resource']['issued'])
 
     bloodPressure_dict['ID'] = patientID
 
