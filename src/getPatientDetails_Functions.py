@@ -26,11 +26,8 @@ def returnPatientLevel(patientID,patientsData,dataResource):
     #A for loop that runs for the number of historical data is needed
     for i in range(dataResource['history']):
         observation_details_dict = {}
-        #There is a special case for the observation of blood pressure.
-        if i== 0:
-            appendage = ''
-        else:
-            appendage = '_'+str(i)
+
+        appendage = '_'+str(i)
 
 
         #The entry index is specified by how recently in history the data is
@@ -39,7 +36,7 @@ def returnPatientLevel(patientID,patientsData,dataResource):
         try:
 
             observation_details_dict[dataResource['name']+"_data"+appendage] = str(entry[entryIndex]['resource']['valueQuantity']['value'])
-            observation_details_dict[dataResource['name']+"_units"+appendage] = str(entry[entryIndex]['resource']['valueQuantity']['unit'])
+            observation_details_dict[dataResource['name']+"_units"] = str(entry[entryIndex]['resource']['valueQuantity']['unit'])
             observation_details_dict[dataResource['name']+"_timeIssued"+appendage] = str(entry[entryIndex]['resource']['issued'])
             observation_details_dict['ID'] = patientID
         except :
@@ -65,11 +62,8 @@ def returnPatientBloodPressureLevel(patientID,patientsData, dataResource):
     #A for loop that runs for the number of historical data is needed
     for i in range(dataResource['history']):
         observation_details_dict = {}
-        #There is a special case for the observation of blood pressure.
-        if i== 0:
-            appendage = ''
-        else:
-            appendage = '_'+str(i)
+
+        appendage = '_'+str(i)
 
 
         #The entry index is specified by how recently in history the data is
@@ -96,7 +90,7 @@ def returnPatientBloodPressureLevel(patientID,patientsData, dataResource):
             if component["code"]['coding'][0]['code'] == code:
                 #Add the acquired information to the dictionary
                 bloodPressure_dict[dataResource['name']+"_data"+appendage] = str(component['valueQuantity']['value'])
-                bloodPressure_dict[dataResource['name']+"_units"+appendage] = str(component['valueQuantity']['unit'])
+                bloodPressure_dict[dataResource['name']+"_units"] = str(component['valueQuantity']['unit'])
                 bloodPressure_dict[dataResource['name']+"_timeIssued"+appendage] = str(entry['resource']['issued'])
 
 
