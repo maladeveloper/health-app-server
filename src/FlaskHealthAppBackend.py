@@ -11,6 +11,10 @@ from src.FlaskHealthAppBackendInterface import FlaskHealthAppBackendInterface
 
 class FlaskHealthAppBackend(FlaskHealthAppBackendInterface):
 
+    @route('/')
+    def helloWorld(self):
+        return jsonify("Hello")
+
     @route('/associatedPatients')
     def getAssociatedPatients(self):
         #get the practitioner id from the url argument pracid
@@ -28,7 +32,7 @@ class FlaskHealthAppBackend(FlaskHealthAppBackendInterface):
         queue = Queue()
 
         # Create 32 worker threads
-        THREADS=32
+        THREADS=16
         for x in range(THREADS):
             worker = getAssociatedPatients_Functions.GetPatientDataWorker(queue, patientIDArray)
             # Setting daemon to True will let the main thread exit even though the workers are blocking

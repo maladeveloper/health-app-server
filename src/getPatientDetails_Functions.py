@@ -131,7 +131,7 @@ def findPatientData(dataSpecifier,patientIDArray, ALL_DATA):
     queue = Queue()
 
     # Create 32 worker threads
-    THREADS = 32
+    THREADS = 16
 
 
     observationToCodeMap = {
